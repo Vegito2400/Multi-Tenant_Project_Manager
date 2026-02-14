@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  memberships Membership[]
+  tasks Task[]
+}
+
+
+model Organization {
+  id String @id @default(uuid())
+  name String
+  createdBy String
+  createdAt DateTime @default(now())
+
+  memberships Membership[]
+  projects Project[]
+}
+
+model Membership{
+  id String @id @default(uuid())
+  role Role
+  joinedAt DateTime @default(now())
+  userId String
+  organizationId String
+
+  user User @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+enum Role{
+  OWNER
+  ADMIN 
+  MEMBER
+}
+
+model Project{
+  id String @id @default(uuid())
+  name String
+  description String?
+  createdAt DateTime @default(now())
+  isDeleted Boolean @default(false)
+  createdBy String
+  organizationId String
+
+  organization Organization @relation(fields: [organizationId],references: [id])
+
+  tasks Task[]
+}
+
+model Task{
+  id String @id @default(uuid())
+  title String
+  description String?
+  status TaskStatus @default(TODO)
+  priority Priority @default(MEDIUM)
+  dueDate DateTime?
+  createdAt DateTime @default(now())
+  isDeleted Boolean @default(false)
+
+  projectId String
+  assigneeId String?
+
+  project Project @relation(fields: [projectId],references: [id])
+  assignee User? @relation(fields: [assigneeId],references: [id])
+}
+
+enum TaskStatus{
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum Priority{
+  LOW
+  MEDIUM
+  HIGH
+}
