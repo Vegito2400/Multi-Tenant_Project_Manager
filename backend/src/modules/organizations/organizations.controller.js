@@ -60,9 +60,21 @@ const addUser = async (req, res) => {
   }
 };
 
+const getMembers = async(req,res)=>{
+  try{
+    const orgId=req.org.id;
+    const result=await orgServices.getAllMembers({orgId});
+    console.log(result);
+    return res.json(result);
+  }catch(err){
+    return res.status(400).json({message:err.message});
+  }
+};
+
 module.exports = {
   createOrganization,
   getUserOrganizations,
   changeRole,
   addUser,
+  getMembers
 };

@@ -83,4 +83,15 @@ const addNewUser = async({email,role,userRole,orgId})=>{
     });
 };
 
-module.exports = { createOrg, getOrgs, changeUserRole,addNewUser };
+const getAllMembers = async({orgId})=>{
+  const members= await prisma.membership.findMany({
+    where:{
+      organizationId:orgId,
+    }
+  });
+  if(!members)throw new Error("No members found");
+  console.log(members);
+  return members;
+};
+
+module.exports = { createOrg, getOrgs, changeUserRole,addNewUser,getAllMembers };

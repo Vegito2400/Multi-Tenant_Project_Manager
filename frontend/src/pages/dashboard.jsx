@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [newProjectName, setNewProjectName] = useState("");
   const [activeProject, setActiveProject] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [members, setMembers] = useState([]);
   const [newTask, setNewTask] = useState("");
   const { logout } = useAuth();
 
@@ -36,9 +37,15 @@ export default function Dashboard() {
     setTasks(res.data.data);
   };
 
+  const fetchMembers = async () => {
+    const res = await api.get("/org/members");
+    setMembers(res.data);
+  };
+
   const selectOrg = (org) => {
     localStorage.setItem("orgId", org.id);
     setActiveOrgs(org);
+    fetchMembers();
   };
 
   // const selectOrg = (org) => {
@@ -62,6 +69,8 @@ export default function Dashboard() {
     fetchProjects();
   };
 
+  const isMember = activeOrg?.role === "MEMBER";
+
   return (
     <div style={styles.container}>
       <h2>Dashboard</h2>
@@ -73,7 +82,8 @@ export default function Dashboard() {
       <ul style={styles.list}>
         {orgs.map((org) => (
           <li key={org.id}>
-            <strong>{org.name}</strong> ({org.role})
+            <strong>{org.name}</strong>
+            <span style={{ color: "gray" }}>({org.role})</span>
             <button onClick={() => selectOrg(org)}>Select</button>
           </li>
         ))}
@@ -86,11 +96,14 @@ export default function Dashboard() {
 
           <div style={styles.createBox}>
             <input
+              disabled={isMember}
               placeholder="New project name"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
             />
-            <button onClick={createProject}>Create</button>
+            <button onClick={createProject} disabled={isMember}>
+              Create
+            </button>
           </div>
 
           <ul>
@@ -107,6 +120,7 @@ export default function Dashboard() {
                 </span>
                 <button
                   style={{ marginLeft: 10 }}
+                  disabled={isMember}
                   onClick={() => deleteProject(project.id)}
                 >
                   Delete
@@ -145,7 +159,35 @@ export default function Dashboard() {
               <ul>
                 {tasks.map((task) => (
                   <li key={task.id}>
-                    {task.title} — {task.status}
+                    <div>
+                      {task.title} — {task.status}
+                      {task.assigneeId && (
+                        <span style={{ marginLeft: 8, color: "green" }}>
+                          Assigned
+                        </span>
+                      )}
+                      {!isMember && (
+                        <select
+                          onChange={async (e) => {
+                            const userId = e.target.value;
+                            if (!userId) return;
+
+                            await api.patch(`/tasks/${task.id}`, {
+                              assigneeId: userId,
+                            });
+
+                            fetchTasks(activeProject.id);
+                          }}
+                        >
+                          <option value="">Assign</option>
+                          {members.map((m) => (
+                            <option key={m.userId} value={m.userId}>
+                              {m.email}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
                     <button
                       style={{ marginLeft: 10 }}
                       onClick={async () => {
